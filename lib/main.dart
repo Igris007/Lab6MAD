@@ -1,13 +1,13 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// Muhammad Affan Zahid 335348
+
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,34 +34,18 @@ class MyAppState extends ChangeNotifier {
   }
 
   var favorites = <WordPair>[];
-  var selectedFavorites = <WordPair>{};
 
-  void toggleFavorite(WordPair pair) {
-    if (favorites.contains(pair)) {
-      favorites.remove(pair);
+  void toggleFavorite() {
+    if (favorites.contains(current)) {
+      favorites.remove(current);
     } else {
-      favorites.add(pair);
+      favorites.add(current);
     }
     notifyListeners();
   }
-
-  void removeFromFavorites(Set<WordPair> selectedPairs) {
-    favorites.removeWhere((element) => selectedPairs.contains(element));
-    selectedFavorites = {};
+  void removeFromFavorites(WordPair pair) {
+    favorites.remove(pair);
     notifyListeners();
-  }
-
-  void toggleSelection(WordPair pair) {
-    if (selectedFavorites.contains(pair)) {
-      selectedFavorites.remove(pair);
-    } else {
-      selectedFavorites.add(pair);
-    }
-    notifyListeners();
-  }
-
-  bool isSelected(WordPair pair) {
-    return selectedFavorites.contains(pair);
   }
 }
 
@@ -147,7 +131,7 @@ class GeneratorPage extends StatelessWidget {
             children: [
               ElevatedButton.icon(
                 onPressed: () {
-                  appState.toggleFavorite(pair);
+                  appState.toggleFavorite();
                 },
                 icon: Icon(icon),
                 label: Text('Like'),
@@ -169,7 +153,7 @@ class GeneratorPage extends StatelessWidget {
 
 class BigCard extends StatelessWidget {
   const BigCard({
-    Key? key,
+    super.key,
     required this.pair,
   });
 
@@ -207,73 +191,50 @@ class FavoritesPage extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Favorites'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              _showDeleteConfirmation(context, appState);
+    return ListView(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text('You have '
+              '${appState.favorites.length} favorites:'),
+        ),
+        for (var pair in appState.favorites)
+          ListTile(
+            leading: Icon(Icons.favorite),
+            title: Text(pair.asLowerCase),
+            onTap: () {
+              _showConfirmationDialog(context, appState, pair);
             },
-            icon: Icon(Icons.delete),
           ),
-        ],
-      ),
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      body: ListView(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Text('You have '
-                '${appState.favorites.length} favorites:'),
-          ),
-          for (var pair in appState.favorites)
-            ListTile(
-              leading: Icon(Icons.favorite),
-              title: Text(pair.asLowerCase),
-              onTap: () {
-                appState.toggleSelection(pair);
-              },
-              trailing: appState.isSelected(pair)
-                  ? Icon(Icons.check_circle)
-                  : null,
-            ),
-        ],
-      ),
+      ],
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, MyAppState appState) {
-    if (appState.selectedFavorites.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No Item Selected')),
-      );
-    } else {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Delete Selected Items?"),
-            content: Text("Do you want to delete the selected items?"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text("No"),
-              ),
-              TextButton(
-                onPressed: () {
-                  appState.removeFromFavorites(appState.selectedFavorites);
-                  Navigator.of(context).pop();
-                },
-                child: Text("Yes"),
-              ),
-            ],
-          );
-        },
-      );
-    }
+  void _showConfirmationDialog(BuildContext context, MyAppState appState, WordPair pair) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Remove from Favorites?"),
+          content: Text("Do you want to remove this item from favorites?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text("No"),
+            ),
+            TextButton(
+              onPressed: () {
+                appState.removeFromFavorites(pair);
+                Navigator.of(context).pop();
+              },
+              child: Text("Yes"),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
